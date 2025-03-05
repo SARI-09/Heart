@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heart</title>
+    <title>Реалистичное магическое сердце с текстом</title>
     <style>
         body {
             margin: 0;
@@ -35,6 +35,9 @@
         let textParticles = [];
         let heartSize = 15;
         let textSize = 400;
+        let textOffsetY = -240;
+        let particleStep = 4;
+        let particleReduction = 1; // Коэффициент прореживания частиц (1 = все частицы)
         let pulse = 0;
         let pulseSpeed = 0.04;
         let centerX, centerY;
@@ -48,16 +51,29 @@
             centerX = window.innerWidth / 2;
             centerY = window.innerHeight / 2;
 
-            // Уменьшение сердца и текста на экранах меньше 550px
-            if (window.innerWidth <= 550) {
-                heartSize = 10;
-                textSize = 300;
-            }
-
-            // Дополнительное уменьшение сердца и текста на экранах 350px и меньше
+            // Настройки для разных размеров экрана
             if (window.innerWidth <= 350) {
+                // Для экранов 350px и меньше
                 heartSize = 7;
                 textSize = 200;
+                textOffsetY = -140;
+                particleStep = 8; // Значительно увеличил шаг
+                particleReduction = 0.4; // Оставляем только 40% частиц
+            } else if (window.innerWidth <= 550) {
+                // Для экранов 550px и меньше
+                heartSize = 10;
+                textSize = 300;
+                textOffsetY = -190;
+                particleStep = 6; // Значительно увеличил шаг
+                particleReduction = 0.6; // Оставляем только 60% частиц
+                
+            } else {
+                // Для больших экранов
+                heartSize = 15;
+                textSize = 400;
+                textOffsetY = -240;
+                particleStep = 4;
+                particleReduction = 1; // Все частицы
             }
 
             createHeartParticles();
@@ -82,16 +98,19 @@
                 angle: Math.random() * Math.PI * 2,
                 speed: Math.random() * 0.01 + 0.1,
                 flicker: Math.random() * 0.0001,
-                floatOffset: Math.random() * 5,
+                floatOffset: Math.random() * 3,
                 floatSpeed: Math.random() * 0.02 + 0.01,
-                wind: (Math.random() - 0.5) * 2,
+                wind: (Math.random() - 0.5) * 1,
                 swirl: (Math.random() - 0.5) * 0.2
             };
         }
 
         function createHeartParticles() {
             heartParticles = [];
-            for (let i = 0; i < 11000; i++) {
+            // Адаптивное количество частиц для сердца в зависимости от размера экрана
+            const particleCount = window.innerWidth <= 550 ? 8000 : 11000;
+            
+            for (let i = 0; i < particleCount; i++) {
                 let t = Math.random() * Math.PI * 2;
                 let heartPos = heartFunction(t * 5);
                 let rand = Math.sqrt(Math.random());
@@ -102,6 +121,8 @@
 
                 heartParticles.push(createParticle(x, y));
             }
+            
+            console.log(`Создано ${heartParticles.length} частиц сердца`);
         }
 
         function createTextParticles() {
@@ -128,21 +149,23 @@
             const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
             const data = imageData.data;
             
-            // Создаем частицы на основе пикселей текста с увеличенным шагом (меньше частиц)
-            for (let y = 0; y < tempCanvas.height; y += 4) { // Увеличил шаг с 2 до 4
-                for (let x = 0; x < tempCanvas.width; x += 4) { // Увеличил шаг с 2 до 4
+            // Создаем частицы на основе пикселей текста с адаптивным шагом и прореживанием
+            for (let y = 0; y < tempCanvas.height; y += particleStep) {
+                for (let x = 0; x < tempCanvas.width; x += particleStep) {
+                    // Дополнительное прореживание частиц
+                    if (Math.random() > particleReduction) continue;
+                    
                     const index = (y * tempCanvas.width + x) * 4;
                     if (data[index + 3] > 128) { // Если пиксель непрозрачный
                         const particleX = (x - tempCanvas.width / 2) * textSize / 800;
-                        // Изменил смещение с -250px на -240px (на 10px ниже)
-                        const particleY = (y - tempCanvas.height / 2) * textSize / 800 - 240;
+                        const particleY = (y - tempCanvas.height / 2) * textSize / 800 + textOffsetY;
                         
                         textParticles.push(createParticle(particleX, particleY));
                     }
                 }
             }
             
-            console.log(`Создано ${textParticles.length} частиц текста`);
+            console.log(`Создано ${textParticles.length} частиц текста, размер экрана: ${window.innerWidth}px, смещение: ${textOffsetY}px`);
         }
 
         function updateParticle(p, scale) {
